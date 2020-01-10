@@ -3,8 +3,9 @@ extern crate sdl2;
 use sdl2::audio::{AudioCallback, AudioSpecDesired};
 use std::sync::mpsc;
 
-const N_SAMPLES_BUF: i32 = 44100 / 4;
+const N_SAMPLES_BUF: i32 = 44100 / 10;
 const ACTIVE_THRESHOLD: i16 = i16::max_value() / 4;
+const INACTIVE_N_THRESHOLD: i16 = 5;
 
 struct Recording {
     record_buffer: Vec<i16>,
@@ -30,6 +31,7 @@ impl AudioCallback for Recording {
 
 fn main() -> Result<(), String> {
     let (tx, rx) = mpsc::channel();
+    let mut n_active = 0;
     let sdl_context = sdl2::init()?;
     let audio_subsystem = sdl_context.audio()?;
     let desired_spec = AudioSpecDesired {
@@ -52,9 +54,18 @@ fn main() -> Result<(), String> {
 
     loop {
         let recorded_vec = rx.recv().map_err(|e| e.to_string())?;
-        let average: i16 = (recorded_vec.iter().fold(0, |x: i32, &y| x + y.abs() as i32) / N_SAMPLES_BUF) as i16;
+        let average: i16 = (recorded_vec.iter().fold(0, |x: i32, &y| x + (y as i32).abs()) / N_SAMPLES_BUF) as i16;
 
         if average > ACTIVE_THRESHOLD {
+            n_active = INACTIVE_N_THRESHOLD;
+        } else {
+            if n_active == 1 {
+                println!("Stop");
+            }
+            n_active -= 1;
+        }
+
+        if n_active > 0 {
             print!("{}\n", average);
         }
     }
