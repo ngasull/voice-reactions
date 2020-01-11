@@ -7,4 +7,6 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+anyhow = "^1.0.26"
+ffmpeg = "^0.2.0-alpha"
 sdl2 = "^0.32.2"
