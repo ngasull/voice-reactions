@@ -8,5 +8,9 @@ edition = "2018"
 
 [dependencies]
 anyhow = "^1.0.26"
-ffmpeg = "^0.2.0-alpha"
 sdl2 = "^0.32.2"
+
+[dependencies.ffmpeg]
+version = "^0.2.0-alpha"
+default-features = false
+features = ["codec", "format", "software-resampling", "software-scaling"]
