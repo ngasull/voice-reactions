@@ -83,7 +83,7 @@ fn get_frame(
     packets_iter: &mut ffmpeg::format::context::input::PacketIter,
     video_stream_id: &usize,
     video_decoder: &mut ffmpeg::codec::decoder::video::Video
-) -> Result<ffmpeg::util::frame::video::Video> {
+    ) -> Result<ffmpeg::util::frame::video::Video> {
     return loop {
         match packets_iter.next() {
             Some((stream, packet)) if stream.index() == *video_stream_id => {
@@ -110,22 +110,22 @@ fn main() -> Result<()> {
     let mut event_pump = sdl_context.event_pump().map_err(|e| anyhow!(e))?;
     let video_subsystem = sdl_context.video().map_err(|e| anyhow!(e))?;
     let (voice_tx, voice_rx) = mpsc::channel();
-	let _capture_device = record(&audio_subsystem, voice_tx)?;
+    let _capture_device = record(&audio_subsystem, voice_tx)?;
 
     // Streaming with ffmpeg
-	ffmpeg::init()?;
+    ffmpeg::init()?;
     let input_path = std::env::current_dir().unwrap().join("video.mp4");
     let input_str = input_path.to_string_lossy().into_owned();
-	let mut opts = ffmpeg::Dictionary::new();
+    //let mut opts = ffmpeg::Dictionary::new();
     let mut input = ffmpeg::format::input(&input_str)?;
-	let (video_stream_id, mut video_decoder) = {
-		let stream = input
-			.streams()
-			.best(ffmpeg::util::media::Type::Video)
+    let (video_stream_id, mut video_decoder) = {
+        let stream = input
+            .streams()
+            .best(ffmpeg::util::media::Type::Video)
             .ok_or(anyhow!("Failed to get video stream"))?;
-		(stream.index(), stream.codec().decoder().video()?)
-	};
-	let packets_iter = &mut input.packets();
+        (stream.index(), stream.codec().decoder().video()?)
+    };
+    let packets_iter = &mut input.packets();
 
     let window = video_subsystem.window("rust-sdl2 demo: Video", 800, 600)
         .position_centered()
@@ -146,9 +146,9 @@ fn main() -> Result<()> {
     canvas.copy(&texture, None, target_rect).unwrap();
     canvas.present();
 
-	let mut voice = false;
+    let mut voice = false;
 
-	'running: loop {
+    'running: loop {
         for event in event_pump.poll_iter() {
             match event {
                 Event::Quit {..}
@@ -159,29 +159,29 @@ fn main() -> Result<()> {
             }
         }
 
-		if let Ok(v) = voice_rx.try_recv() {
-			voice = v;
-		}
+        if let Ok(v) = voice_rx.try_recv() {
+            voice = v;
+        }
 
-		if voice {
-			// Play some frames
-			let frame = match get_frame(packets_iter, &video_stream_id, &mut video_decoder) {
-				Ok(p) => p,
-				Err(msg) => {
-					eprintln!("Error when getting next frame: {}", msg);
-					break;
-				},
-			};
+        if voice {
+            // Play some frames
+            let frame = match get_frame(packets_iter, &video_stream_id, &mut video_decoder) {
+                Ok(p) => p,
+                Err(msg) => {
+                    eprintln!("Error when getting next frame: {}", msg);
+                    break;
+                },
+            };
             texture.with_lock(None, |buffer: &mut [u8], _pitch: usize| {
                 buffer.copy_from_slice(frame.data(0));
             }).unwrap();
             canvas.clear();
             canvas.copy(&texture, None, target_rect).unwrap();
             canvas.present();
-		}
+        }
 
         std::thread::sleep(std::time::Duration::from_millis(50));
-	}
+    }
 
-	Ok(())
+    Ok(())
 }
